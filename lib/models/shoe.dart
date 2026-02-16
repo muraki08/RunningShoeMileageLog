@@ -5,6 +5,7 @@ class Shoe {
   final DateTime purchaseDate;
   final double totalMileage;
   final List<MileageEntry> mileageHistory;
+  final String? imagePath;
 
   Shoe({
     required this.id,
@@ -13,6 +14,7 @@ class Shoe {
     required this.purchaseDate,
     required this.totalMileage,
     required this.mileageHistory,
+    this.imagePath,
   });
 
   factory Shoe.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Shoe {
       mileageHistory: (json['mileageHistory'] as List)
           .map((e) => MileageEntry.fromJson(e))
           .toList(),
+      imagePath: json['imagePath'],
     );
   }
 
@@ -36,6 +39,7 @@ class Shoe {
       'purchaseDate': purchaseDate.toIso8601String(),
       'totalMileage': totalMileage,
       'mileageHistory': mileageHistory.map((e) => e.toJson()).toList(),
+      'imagePath': imagePath,
     };
   }
 
@@ -46,6 +50,7 @@ class Shoe {
     DateTime? purchaseDate,
     double? totalMileage,
     List<MileageEntry>? mileageHistory,
+    String? imagePath,
   }) {
     return Shoe(
       id: id ?? this.id,
@@ -54,6 +59,7 @@ class Shoe {
       purchaseDate: purchaseDate ?? this.purchaseDate,
       totalMileage: totalMileage ?? this.totalMileage,
       mileageHistory: mileageHistory ?? this.mileageHistory,
+      imagePath: imagePath ?? this.imagePath,
     );
   }
 }

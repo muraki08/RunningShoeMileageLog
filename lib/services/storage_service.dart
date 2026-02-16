@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/shoe.dart';
 
@@ -47,7 +49,29 @@ class StorageService {
 
   Future<void> deleteShoe(String shoeId) async {
     final shoes = await loadShoes();
-    shoes.removeWhere((shoe) => shoe.id == shoeId);
+    final shoe = shoes.firstWhere((s) => s.id == shoeId, orElse: () => shoes.first);
+    if (shoe.imagePath != null) {
+      await deleteShoeImage(shoe.imagePath!);
+    }
+    shoes.removeWhere((s) => s.id == shoeId);
     await saveShoes(shoes);
+  }
+
+  static Future<String> saveShoeImage(String shoeId, File imageFile) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    final imageDir = Directory('${appDir.path}/shoe_images');
+    if (!await imageDir.exists()) {
+      await imageDir.create(recursive: true);
+    }
+    final ext = imageFile.path.split('.').last;
+    final savedFile = await imageFile.copy('${imageDir.path}/$shoeId.$ext');
+    return savedFile.path;
+  }
+
+  static Future<void> deleteShoeImage(String imagePath) async {
+    final file = File(imagePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 }

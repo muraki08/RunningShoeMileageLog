@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/shoe_list_screen.dart';
+import 'services/ad_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AdService.initialize();
   runApp(const MyApp());
 }
 

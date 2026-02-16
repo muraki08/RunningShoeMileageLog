@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../models/shoe.dart';
+import '../services/ad_service.dart';
 import '../services/storage_service.dart';
 import 'add_mileage_screen.dart';
 
@@ -17,11 +20,31 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
   late Shoe _shoe;
   bool _isLoading = false;
   final Set<String> _selectedEntryIds = {};
+  BannerAd? _bannerAd;
+  bool _isBannerAdLoaded = false;
+  InterstitialAd? _interstitialAd;
 
   @override
   void initState() {
     super.initState();
     _shoe = widget.shoe;
+    _bannerAd = AdService.createBannerAd(
+      onLoaded: () => setState(() => _isBannerAdLoaded = true),
+    )..load();
+    _loadInterstitialAd();
+  }
+
+  void _loadInterstitialAd() {
+    AdService.loadInterstitialAd(
+      onLoaded: (ad) => _interstitialAd = ad,
+    );
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    _interstitialAd?.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,13 +61,28 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      body: Column(
+        children: [
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                  if (_shoe.imagePath != null && File(_shoe.imagePath!).existsSync())
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(_shoe.imagePath!),
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  if (_shoe.imagePath != null && File(_shoe.imagePath!).existsSync())
+                    const SizedBox(height: 16),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -168,9 +206,18 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
                                   ))
                               .toList(),
                         ),
-                ],
-              ),
+                      ],
+                    ),
+                  ),
+          ),
+          if (_isBannerAdLoaded && _bannerAd != null)
+            SizedBox(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
             ),
+        ],
+      ),
     );
   }
 
@@ -314,6 +361,10 @@ class _ShoeDetailScreenState extends State<ShoeDetailScreen> {
     setState(() => _isLoading = true);
     try {
       await _storageService.deleteShoe(_shoe.id);
+      if (_interstitialAd != null) {
+        await _interstitialAd!.show();
+        _interstitialAd = null;
+      }
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(

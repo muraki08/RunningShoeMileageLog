@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/shoe.dart';
 import '../services/storage_service.dart';
 import '../services/shoe_model_service.dart';
@@ -17,6 +19,7 @@ class _AddShoeScreenState extends State<AddShoeScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
   String? _selectedBrand;
+  File? _selectedImage;
   List<String> _shoeModelSuggestions = [];
   TextEditingController? _autocompleteController;
 
@@ -55,7 +58,11 @@ class _AddShoeScreenState extends State<AddShoeScreen> {
           key: _formKey,
           child: Column(
             children: [
-              DropdownButtonFormField<String>(
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      DropdownButtonFormField<String>(
                 value: _selectedBrand,
                 decoration: const InputDecoration(
                   labelText: 'ブランド',
@@ -181,7 +188,49 @@ class _AddShoeScreenState extends State<AddShoeScreen> {
                   ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _showImagePickerOptions,
+                child: Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey),
+                    image: _selectedImage != null
+                        ? DecorationImage(
+                            image: FileImage(_selectedImage!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _selectedImage == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.camera_alt, size: 48, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text('写真を追加', style: TextStyle(color: Colors.grey)),
+                          ],
+                        )
+                      : null,
+                ),
+              ),
+              if (_selectedImage != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _selectedImage = null),
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    label: const Text('写真を削除', style: TextStyle(color: Colors.red)),
+                  ),
+                ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -226,19 +275,70 @@ class _AddShoeScreenState extends State<AddShoeScreen> {
     }
   }
 
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('カメラ'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('ギャラリー'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
   Future<void> _saveShoe() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+
+      String? imagePath;
+      if (_selectedImage != null) {
+        imagePath = await StorageService.saveShoeImage(id, _selectedImage!);
+      }
+
       final shoe = Shoe(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: id,
         name: _autocompleteController!.text.trim(),
         brand: _selectedBrand!,
         purchaseDate: _selectedDate,
         totalMileage: 0.0,
         mileageHistory: [],
+        imagePath: imagePath,
       );
 
       await _storageService.addShoe(shoe);

@@ -138,7 +138,16 @@ class _AddMileageScreenState extends State<AddMileageScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _showDistanceCalculator,
+                  icon: const Icon(Icons.calculate, size: 18),
+                  label: const Text('距離を計算する'),
+                ),
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(
@@ -245,6 +254,167 @@ class _AddMileageScreenState extends State<AddMileageScreen> {
         );
       }
     }
+  }
+
+  void _showDistanceCalculator() {
+    int selectedHours = 0;
+    int selectedMinutes = 0;
+    int selectedPaceMin = 5;
+    int selectedPaceSec = 0;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            String calcResult() {
+              final totalTimeMin = selectedHours * 60 + selectedMinutes;
+              final totalPaceMin = selectedPaceMin + selectedPaceSec / 60.0;
+
+              if (totalTimeMin <= 0 || totalPaceMin <= 0) return '';
+              final distance = totalTimeMin / totalPaceMin;
+              if (distance > 100) return '';
+              return distance.toStringAsFixed(2);
+            }
+
+            final result = calcResult();
+
+            return AlertDialog(
+              title: const Text('距離を計算'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('走行時間',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: selectedHours,
+                            decoration: const InputDecoration(
+                              labelText: '時間',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: List.generate(24, (i) => i)
+                                .map((v) => DropdownMenuItem(
+                                    value: v, child: Text('$v h')))
+                                .toList(),
+                            onChanged: (v) =>
+                                setDialogState(() => selectedHours = v ?? 0),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: selectedMinutes,
+                            decoration: const InputDecoration(
+                              labelText: '分',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: List.generate(60, (i) => i)
+                                .map((v) => DropdownMenuItem(
+                                    value: v, child: Text('$v min')))
+                                .toList(),
+                            onChanged: (v) =>
+                                setDialogState(() => selectedMinutes = v ?? 0),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('平均ペース（/km）',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: selectedPaceMin,
+                            decoration: const InputDecoration(
+                              labelText: '分',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: List.generate(16, (i) => i + 2)
+                                .map((v) => DropdownMenuItem(
+                                    value: v, child: Text("$v'")))
+                                .toList(),
+                            onChanged: (v) =>
+                                setDialogState(() => selectedPaceMin = v ?? 5),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: selectedPaceSec,
+                            decoration: const InputDecoration(
+                              labelText: '秒',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: List.generate(12, (i) => i * 5)
+                                .map((v) => DropdownMenuItem(
+                                    value: v,
+                                    child: Text('${v.toString().padLeft(2, '0')}"')))
+                                .toList(),
+                            onChanged: (v) =>
+                                setDialogState(() => selectedPaceSec = v ?? 0),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (result.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('計算結果',
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$result km',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('キャンセル'),
+                ),
+                TextButton(
+                  onPressed: result.isEmpty
+                      ? null
+                      : () {
+                          _distanceController.text = result;
+                          Navigator.of(context).pop();
+                        },
+                  child: const Text('反映する'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showDeleteDialog() {
