@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_service.dart';
 import '../services/data_migration_service.dart';
 import 'add_shoe_screen.dart';
+import 'settings_screen.dart';
 import 'shoe_detail_screen.dart';
 
 class ShoeListScreen extends StatefulWidget {
@@ -70,6 +71,8 @@ class _ShoeListScreenState extends State<ShoeListScreen> {
                 _exportData();
               } else if (value == 'import') {
                 _showImportDialog();
+              } else if (value == 'settings') {
+                _navigateToSettings();
               }
             },
             itemBuilder: (context) => [
@@ -86,6 +89,14 @@ class _ShoeListScreenState extends State<ShoeListScreen> {
                 child: ListTile(
                   leading: Icon(Icons.download),
                   title: Text('データをインポート'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'settings',
+                child: ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text('設定'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -183,6 +194,13 @@ class _ShoeListScreenState extends State<ShoeListScreen> {
         builder: (context) => ShoeDetailScreen(shoe: shoe),
       ),
     ).then((_) => _loadShoes());
+  }
+
+  void _navigateToSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
   }
 
   void _navigateToAddShoe() {
