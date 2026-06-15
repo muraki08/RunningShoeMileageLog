@@ -1,29 +1,24 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
-  // テスト用ID（本番リリース時に本番IDに差し替えてください）
-  // Android テスト用
-  static const String _androidBannerAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  static const String _androidInterstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
-
-  // iOS テスト用
-  static const String _iosBannerAdUnitId = 'ca-app-pub-3940256099942544/2934735716';
-  static const String _iosInterstitialAdUnitId = 'ca-app-pub-3940256099942544/4411468910';
-
   static String get bannerAdUnitId {
-    if (Platform.isAndroid) return _androidBannerAdUnitId;
-    if (Platform.isIOS) return _iosBannerAdUnitId;
+    if (Platform.isAndroid) return dotenv.get('ADMOB_ANDROID_BANNER_AD_UNIT_ID');
+    if (Platform.isIOS) return dotenv.get('ADMOB_IOS_BANNER_AD_UNIT_ID');
     throw UnsupportedError('Unsupported platform');
   }
 
   static String get interstitialAdUnitId {
-    if (Platform.isAndroid) return _androidInterstitialAdUnitId;
-    if (Platform.isIOS) return _iosInterstitialAdUnitId;
+    if (Platform.isAndroid) {
+      return dotenv.get('ADMOB_ANDROID_INTERSTITIAL_AD_UNIT_ID');
+    }
+    if (Platform.isIOS) return dotenv.get('ADMOB_IOS_INTERSTITIAL_AD_UNIT_ID');
     throw UnsupportedError('Unsupported platform');
   }
 
   static Future<void> initialize() async {
+    await dotenv.load();
     await MobileAds.instance.initialize();
   }
 
